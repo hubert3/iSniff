@@ -153,15 +153,14 @@ class SingleTCPHandler(SocketServer.BaseRequestHandler):
 			if extra_name not in RemoteHostnames[dst_ip]:
 			# however, adding extra hostnames as subjectAltNames makes other certs fail to validate, so disabled by default
 				RemoteHostnames[dst_ip].append(extra_name)
-	if dst_ip not in GeneratedCert.keys():
-		CreateSignedX509Certificate(ip=dst_ip, hostnames=RemoteHostnames[dst_ip], peername=peername)
-	ok = False
+	PhoneConnected = False
+	CreateSignedX509Certificate(ip=dst_ip, hostnames=RemoteHostnames[dst_ip], peername=peername)
 	try:
 		(certfile, keyfile) = GeneratedCert[dst_ip]
 		#print 'Setting up SSL socket using %s' % certfile
 		stream_phone = ssl.wrap_socket(self.request, server_side=True, certfile=certfile,
 					       keyfile=keyfile, ssl_version=ssl.PROTOCOL_TLSv1)
-		ok = True
+		PhoneConnected = True
 	except (ssl.SSLError), e:
 		print 'SSLError on connection to phone (%s)' % e
 		self.finish()
@@ -169,7 +168,7 @@ class SingleTCPHandler(SocketServer.BaseRequestHandler):
 		server_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		stream_server = ssl.wrap_socket(server_sock)
 		stream_server.connect((dst_ip, 443))
-		if ok:
+		if PhoneConnected:
 			if not any(pattern in CN for pattern in ['static.','fbcdn','akamai']):
 				print 'Logging to logs/%s-%s.log' % (CN,peername)
 				PipeThread(stream_phone, stream_server, logfile=file('logs/%s-%s.log'% (CN,peername),'a')).start()
