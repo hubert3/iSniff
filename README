@@ -1,25 +1,25 @@
-# iSniff.py [initial release 2011-08-03]
-#
-# SSL man-in-the-middle tool inspired by Moxie Marlinspike's sslsniff 0.8
-#
-# Successfully tested against iOS < 4.3.5 devices vulnerable to CVE-2011-0228 
-# basic constraints validation issue (see http://support.apple.com/kb/HT4824)
-# discovered by Gregor Kopf / Paul Kehrer
-#
-# Written by hubert(a)pentest.com / @hubert3
-#
-# Redirect SSL traffic from NAT'd clients to iSniff as follows:
-#
-# iptables -t nat -A PREROUTING -p tcp --destination-port 443 -j REDIRECT --to-ports 2000
-#
-# Linux/iptables is currently required for iSniff to determine the intended destination
-# of redirected traffic and generate working certs. Other platforms are not supported.
-#
-# Any certificate trusted by iOS can be used as signing_cert - The example config below
-# uses an APNS cert extracted from an iPhone using 'nimble' (tool and cert not included). 
-# The certificate chain constructed with this config is similar to the one presented at 
-# https://issl.recurity.com. Website certs issued by other trusted CAs such as Verisign, 
-# Startcom, Comodo etc. also work.
-#
-# Tested on Debian GNU/Linux 6.0 (kernel 2.6.32-5-686, Python 2.6.6)
-# Packages required: python-m2crypto
+iSniff.py [updated release 2011-08-25]
+
+SSL man-in-the-middle tool inspired by Moxie Marlinspike's sslsniff 0.8
+
+Successfully tested against iOS < 4.3.5 devices vulnerable to CVE-2011-0228 
+basic constraints validation issue (see http://support.apple.com/kb/HT4824)
+discovered by Gregor Kopf / Paul Kehrer
+
+Written by hubert(a)pentest.com / @hubert3
+
+Redirect SSL traffic from NAT'd clients to iSniff as follows:
+
+iptables -t nat -A PREROUTING -p tcp --destination-port 443 -j REDIRECT --to-ports 2000
+
+Linux/iptables is currently required for iSniff to determine the intended destination
+of redirected traffic and generate working certs. Other platforms are not supported.
+
+Any certificate trusted by iOS can be used as signing_cert - The example config below
+uses an APNS cert extracted from an iPhone using 'nimble' (tool and cert not included). 
+The certificate chain constructed with this config is similar to the one presented at 
+https://issl.recurity.com. Website certs issued by other trusted CAs such as Verisign, 
+Startcom, Comodo etc. also work.
+
+Tested on Debian GNU/Linux 6.0 (kernel 2.6.32-5-686, Python 2.6.6)
+Packages required: python-m2crypto
