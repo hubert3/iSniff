@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 
-# iSniff.py [release 2011-08-25]
+# iSniff.py [updated release 2011-08-25]
 #
 # SSL man-in-the-middle tool inspired by Moxie Marlinspike's sslsniff 0.8
 #
